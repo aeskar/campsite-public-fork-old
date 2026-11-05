@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import Pusher from 'pusher-js'
 import Ajax from 'pusher-js/types/src/core/http/ajax'
 
-import { PUSHER_APP_CLUSTER, PUSHER_KEY, RAILS_API_URL } from '@campsite/config'
+import { PUSHER_APP_CLUSTER, PUSHER_HOST, PUSHER_KEY, PUSHER_PORT, PUSHER_TLS, RAILS_API_URL } from '@campsite/config'
 
 const PusherContext = createContext<Pusher | null>(null)
 
@@ -22,10 +22,22 @@ export const PusherProvider: React.FC<Props> = ({ children }) => {
       return xhr
     }
 
-    const connection = new Pusher(PUSHER_KEY, {
-      cluster: PUSHER_APP_CLUSTER,
-      channelAuthorization: { endpoint: `${RAILS_API_URL}/v1/pusher/auth`, transport: 'ajax' }
-    })
+    const channelAuthorization = { endpoint: `${RAILS_API_URL}/v1/pusher/auth`, transport: 'ajax' as const }
+    const connection = new Pusher(
+      PUSHER_KEY,
+      PUSHER_HOST
+        ? {
+            // pusher-js requires a cluster even when wsHost is set; Soketi ignores it.
+            cluster: 'eu',
+            wsHost: PUSHER_HOST,
+            wsPort: PUSHER_PORT ?? 80,
+            wssPort: PUSHER_PORT ?? 443,
+            forceTLS: PUSHER_TLS,
+            enabledTransports: ['ws', 'wss'],
+            channelAuthorization
+          }
+        : { cluster: PUSHER_APP_CLUSTER, channelAuthorization }
+    )
 
     setPusher(connection)
 

@@ -13,28 +13,29 @@ export const POLL_OPTION_DESCRIPTION_LENGTH = 32
 
 export const IS_NGROK = !!process.env.NEXT_PUBLIC_IS_NGROK
 
-export const WEB_URL = IS_PRODUCTION ? WEB_URL_PROD : process.env.NEXT_PUBLIC_WEB_URL || WEB_URL_DEV
+/*
+  Self-hosting: every NEXT_PUBLIC_* value is read first, in every environment, with the upstream
+  constant as the fallback. Next.js inlines these at build time, so each variable must be accessed
+  with the literal `process.env.NEXT_PUBLIC_NAME` form.
+*/
+export const WEB_URL = process.env.NEXT_PUBLIC_WEB_URL || (IS_PRODUCTION ? WEB_URL_PROD : WEB_URL_DEV)
 export const SITE_URL = IS_PRODUCTION ? SITE_URL_PROD : SITE_URL_DEV
-export const SYNC_URL = IS_PRODUCTION ? SYNC_URL_PROD : process.env.NEXT_PUBLIC_SYNC_URL || SYNC_URL_DEV
+export const SYNC_URL = process.env.NEXT_PUBLIC_SYNC_URL || (IS_PRODUCTION ? SYNC_URL_PROD : SYNC_URL_DEV)
 
 export const DESKTOP_APP_PROTOCOL = IS_PRODUCTION ? 'campsite://' : 'campsite-dev://'
 export const LAST_CLIENT_JS_BUILD_ID_LS_KEY = 'latest-js-time'
 
-export const RAILS_API_URL = IS_PRODUCTION
-  ? 'https://api.campsite.com'
-  : process.env.NEXT_PUBLIC_API_URL || 'http://api.campsite.test:3001'
+export const RAILS_API_URL =
+  process.env.NEXT_PUBLIC_API_URL || (IS_PRODUCTION ? 'https://api.campsite.com' : 'http://api.campsite.test:3001')
 
 const RAILS_AUTH_URL_PROD_COM = 'https://auth.campsite.com'
 
-export const RAILS_AUTH_URL = IS_PRODUCTION
-  ? RAILS_AUTH_URL_PROD_COM
-  : process.env.NEXT_PUBLIC_AUTH_URL || 'http://auth.campsite.test:3001'
+export const RAILS_AUTH_URL =
+  process.env.NEXT_PUBLIC_AUTH_URL || (IS_PRODUCTION ? RAILS_AUTH_URL_PROD_COM : 'http://auth.campsite.test:3001')
 
-/*
-  Not using an env variable because we use this variable in the browser, which
-  requires extra config with Next.js to send env variables to the browser.
-*/
-export const IMGIX_DOMAIN = IS_PRODUCTION ? 'https://campsite.imgix.net' : 'https://campsite-dev.imgix.net'
+export const IMGIX_DOMAIN =
+  process.env.NEXT_PUBLIC_IMGIX_DOMAIN ||
+  (IS_PRODUCTION ? 'https://campsite.imgix.net' : 'https://campsite-dev.imgix.net')
 
 export const FIGMA_PLUGIN_URL = 'https://www.figma.com/community/plugin/1108886817260186751'
 export const ZAPIER_APP_URL = 'https://zapier.com/apps/campsite/integrations'
@@ -48,11 +49,24 @@ export const LINEAR_CLIENT_ID = IS_PRODUCTION ? LINEAR_PROD_CLIENT_ID : LINEAR_D
 export const ONBOARDING_STEP_KEY = 'onboardingStep'
 export const ONBOARDING_SHARED_POSTS_KEY = 'onboardingPostIds'
 
-export const PUSHER_KEY = IS_PRODUCTION ? '1301e1180de87095b1c0' : '874a1de2f18896929939'
+export const PUSHER_KEY =
+  process.env.NEXT_PUBLIC_PUSHER_KEY || (IS_PRODUCTION ? '1301e1180de87095b1c0' : '874a1de2f18896929939')
 export const PUSHER_APP_CLUSTER = 'us3'
+
+/*
+  Self-hosted Pusher-compatible server (Soketi). When NEXT_PUBLIC_PUSHER_HOST is unset the client
+  talks to Pusher Channels as upstream does. PUSHER_PORT is undefined unless NEXT_PUBLIC_PUSHER_PORT
+  is set, and PUSHER_TLS defaults to true (set NEXT_PUBLIC_PUSHER_TLS=false for plain ws).
+*/
+export const PUSHER_HOST = process.env.NEXT_PUBLIC_PUSHER_HOST || undefined
+export const PUSHER_PORT = process.env.NEXT_PUBLIC_PUSHER_PORT
+  ? Number(process.env.NEXT_PUBLIC_PUSHER_PORT)
+  : undefined
+export const PUSHER_TLS = process.env.NEXT_PUBLIC_PUSHER_TLS !== 'false'
 
 // Key is generated from the VAPID keys in the Rails app but without padding ("=")
 export const WEB_PUSH_PUBLIC_KEY =
+  process.env.NEXT_PUBLIC_WEB_PUSH_PUBLIC_KEY ||
   'BF151mIoXtZOsN_515tWb1ykezZZn1HIkDP-fwRjhPOyiKl29G4WwEvFWyxwlLuN0YE_TvyIcx5liEctScKX3nI'
 
 const DEFAULT_SEO_TITLE = 'Campsite — Work communication for distributed teams'
