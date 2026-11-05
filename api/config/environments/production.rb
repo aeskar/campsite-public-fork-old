@@ -66,7 +66,7 @@ Rails.application.configure do
   # config.active_job.queue_name_prefix = "campsite_api_production"
 
   config.action_mailer.perform_caching = false
-  config.action_mailer.default_url_options = { host: "campsite.com" }
+  config.action_mailer.default_url_options = { host: ENV.fetch("MAILER_HOST", "campsite.com") }
   config.action_mailer.delivery_method = :postmark
   config.action_mailer.postmark_settings = {
     api_token: Rails.application.credentials&.postmark&.api_token,
@@ -117,4 +117,7 @@ Rails.application.configure do
 
   # required to access the app via Fly private network
   config.hosts << "campsite-api.internal"
+
+  # Self-hosted: comma-separated extra hostnames, for example "api.camp.aeskar.com,auth.camp.aeskar.com".
+  ENV.fetch("APP_HOSTS", "").split(",").map(&:strip).reject(&:empty?).each { |host| config.hosts << host }
 end

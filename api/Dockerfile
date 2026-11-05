@@ -83,7 +83,7 @@ ENV MALLOC_CONF=dirty_decay_ms:1000,narenas:2,background_thread:true
 
 COPY . .
 
-RUN SECRET_KEY_BASE=dummy bundle exec rails assets:precompile
+RUN SECRET_KEY_BASE_DUMMY=1 SECRET_KEY_BASE=dummy bundle exec rails assets:precompile
 
 EXPOSE 8080
 ENV PORT 8080

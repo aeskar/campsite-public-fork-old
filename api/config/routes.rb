@@ -51,7 +51,7 @@ Rails.application.routes.draw do
     end
   end
 
-  constraints subdomain: "admin" do
+  constraints subdomain: Campsite.admin_subdomain do
     scope module: "admin", path: "admin" do
       authenticate :user, lambda { |u| u.staff? } do
         mount Sidekiq::Web => "/sidekiq"

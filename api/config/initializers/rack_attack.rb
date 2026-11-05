@@ -20,7 +20,9 @@ Rack::Attack.blocklist_ip("44.200.74.14")
 Rack::Attack.blocklist_ip("3.236.211.115")
 
 Rack::Attack.safelist("mark server-side rendering requests safe") do |request|
-  request.get_header("HTTP_X_CAMPSITE_SSR_SECRET") == Rails.application.credentials.rack_attack.fetch(:ssr_secret)
+  ssr_secret = ENV["RACK_ATTACK_SSR_SECRET"].presence || Rails.application.credentials&.rack_attack&.fetch(:ssr_secret, nil).presence
+  # Never safelist when no secret is configured (nil == nil would match every request).
+  ssr_secret.present? && ActiveSupport::SecurityUtils.secure_compare(request.get_header("HTTP_X_CAMPSITE_SSR_SECRET").to_s, ssr_secret)
 end
 
 HIGH_RATE_PATHS = [
