@@ -1,0 +1,64 @@
+# Imgix-compatible image gateway in front of imgproxy.
+#
+# Import this file inside a Caddy site block. It translates the Imgix query
+# parameters Campsite builds (see README.md) into imgproxy processing options
+# and proxies to imgproxy, which reads the object from the media bucket.
+#
+# Required environment (read by Caddy when the config is loaded):
+#   IMGPROXY_UPSTREAM  imgproxy address, for example imgproxy:8080
+#
+# imgproxy itself is configured with IMGPROXY_BASE_URL=s3://<bucket>/, so the
+# request path (the S3 key) is appended to that base and cannot name any other
+# source.
+
+# Resize: w, h, fit=crop.
+map {query.w} {img_w} {
+	~^([0-9]+)$ "w:${1}/"
+	default ""
+}
+map {query.h} {img_h} {
+	~^([0-9]+)$ "h:${1}/"
+	default ""
+}
+map {query.fit} {img_fit} {
+	crop "rt:fill/"
+	default ""
+}
+
+# Device pixel ratio and quality.
+map {query.dpr} {img_dpr} {
+	~^([0-9]+(\.[0-9]+)?)$ "dpr:${1}/"
+	default ""
+}
+map {query.q} {img_q} {
+	~^([0-9]{1,3})$ "q:${1}/"
+	default ""
+}
+
+# Source rectangle crop: rect=x,y,w,h becomes crop:w:h:nowe:x:y.
+map {query.rect} {img_rect} {
+	~^([0-9]+),([0-9]+),([0-9]+),([0-9]+)$ "c:${3}:${4}:nowe:${1}:${2}/"
+	default ""
+}
+
+vars img_opts "{img_w}{img_h}{img_fit}{img_dpr}{img_q}{img_rect}"
+
+# dl (with or without a value) downloads the original bytes as an attachment.
+# Its value is usually empty, so test for presence in the raw query string.
+@img_download expression `{http.request.uri.query}.matches("(^|&)dl(=|&|$)")`
+# No supported transform: serve the original bytes, with Range support
+# (videos, documents, GIFs, fm=mp4 and every unsupported parameter).
+@img_original {
+	not expression `{http.request.uri.query}.matches("(^|&)dl(=|&|$)")`
+	vars {vars.img_opts} ""
+}
+@img_transform {
+	not expression `{http.request.uri.query}.matches("(^|&)dl(=|&|$)")`
+	not vars {vars.img_opts} ""
+}
+
+rewrite @img_download /insecure/raw:1/att:1/plain{http.request.uri.path}?
+rewrite @img_original /insecure/raw:1/plain{http.request.uri.path}?
+rewrite @img_transform /insecure/{vars.img_opts}plain{http.request.uri.path}?
+
+reverse_proxy {$IMGPROXY_UPSTREAM}

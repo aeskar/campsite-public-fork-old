@@ -14,5 +14,12 @@ class ImgixAddAssetJobTest < ActiveJob::TestCase
 
       ImgixAddAssetJob.new.perform(origin_path)
     end
+
+    test "is a no-op without an Imgix API key" do
+      Rails.application.credentials.stubs(:dig).with(:imgix, :api_key).returns(nil)
+      ImgixClient.expects(:new).never
+
+      ImgixAddAssetJob.new.perform("o/foklwviisxc1/p/video.mp4")
+    end
   end
 end

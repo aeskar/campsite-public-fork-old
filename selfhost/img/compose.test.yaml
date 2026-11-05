@@ -1,0 +1,43 @@
+# Throwaway stack for test.sh: MinIO, imgproxy and the gateway only.
+# The full stack lives in selfhost/compose.yaml (Task 6).
+name: campsite-test-img
+
+services:
+  minio:
+    image: ${MINIO_IMAGE:-pgsty/minio:latest}
+    command: server /data
+    environment:
+      MINIO_ROOT_USER: campsite-test
+      MINIO_ROOT_PASSWORD: campsite-test-only
+    ports:
+      - "127.0.0.1:${IMG_TEST_MINIO_PORT:-19000}:9000"
+
+  imgproxy:
+    image: darthsim/imgproxy:v3.28
+    environment:
+      IMGPROXY_USE_S3: "true"
+      IMGPROXY_S3_ENDPOINT: http://minio:9000
+      IMGPROXY_S3_ENDPOINT_USES_PATH_STYLE: "true"
+      IMGPROXY_S3_REGION: us-east-1
+      # Local MinIO only. In AWS, imgproxy uses the instance role instead.
+      AWS_ACCESS_KEY_ID: campsite-test
+      AWS_SECRET_ACCESS_KEY: campsite-test-only
+      IMGPROXY_BASE_URL: s3://campsite-test-media/
+      IMGPROXY_ALLOWED_SOURCES: s3://campsite-test-media/
+      IMGPROXY_AUTO_WEBP: "true"
+      # Test only: exposes X-Result-Width/Height for the size checks.
+      IMGPROXY_ENABLE_DEBUG_HEADERS: "true"
+    depends_on:
+      - minio
+
+  gateway:
+    image: caddy:2.11-alpine
+    environment:
+      IMGPROXY_UPSTREAM: imgproxy:8080
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./gateway.caddy:/etc/caddy/gateway.caddy:ro
+    ports:
+      - "127.0.0.1:${IMG_TEST_GATEWAY_PORT:-18080}:8080"
+    depends_on:
+      - imgproxy

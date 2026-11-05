@@ -14,7 +14,7 @@ class Project < ApplicationRecord
     {
       name: "General",
       description: "Share updates, work-in-progress, and team announcements.",
-      cover_photo_path: "#{Rails.application.credentials.imgix.url}/project-covers/project-cover-9.png",
+      cover_photo_path: "#{ImgixUrlBuilder.base_url}/project-covers/project-cover-9.png",
       is_general: true,
       is_default: true,
     },
