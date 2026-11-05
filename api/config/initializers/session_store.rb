@@ -2,7 +2,10 @@
 
 cookie_domain = ENV["SESSION_COOKIE_DOMAIN"].presence
 
-if Rails.env.production? && cookie_domain.nil?
+# The image build runs `rails assets:precompile` with RAILS_ENV=production and
+# SECRET_KEY_BASE_DUMMY=1 and no real configuration, so the guard is skipped there.
+# A real production boot never sets SECRET_KEY_BASE_DUMMY and still fails closed.
+if Rails.env.production? && cookie_domain.nil? && ENV["SECRET_KEY_BASE_DUMMY"].blank?
   raise "SESSION_COOKIE_DOMAIN must be set in production (for example \".camp.aeskar.com\"); " \
     "refusing to fall back to :all because the session cookie would be shared with sibling services."
 end

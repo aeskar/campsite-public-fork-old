@@ -60,6 +60,24 @@ class SelfhostConfigTest < ActionDispatch::IntegrationTest
     load(INITIALIZER)
   end
 
+  test "production guard is skipped for the image build (SECRET_KEY_BASE_DUMMY)" do
+    original = ENV.values_at("SESSION_COOKIE_DOMAIN", "SECRET_KEY_BASE_DUMMY")
+    Rails.env.stubs(:production?).returns(true)
+    ENV.delete("SESSION_COOKIE_DOMAIN")
+    ENV["SECRET_KEY_BASE_DUMMY"] = "1"
+
+    assert_nothing_raised { load(INITIALIZER) }
+
+    ENV.delete("SECRET_KEY_BASE_DUMMY")
+    assert_raises(RuntimeError) { load(INITIALIZER) }
+  ensure
+    Rails.env.unstub(:production?)
+    ["SESSION_COOKIE_DOMAIN", "SECRET_KEY_BASE_DUMMY"].zip(original).each do |k, v|
+      v ? ENV[k] = v : ENV.delete(k)
+    end
+    load(INITIALIZER)
+  end
+
   test "ADMIN_SUBDOMAIN overrides the admin subdomain" do
     assert_equal("admin", Campsite.admin_subdomain)
 
