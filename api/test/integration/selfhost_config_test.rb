@@ -41,6 +41,25 @@ class SelfhostConfigTest < ActionDispatch::IntegrationTest
     assert_match(/domain=camp\.localhost;/i, header)
   end
 
+  test "production boot fails without SESSION_COOKIE_DOMAIN" do
+    original = ENV["SESSION_COOKIE_DOMAIN"]
+    Rails.env.stubs(:production?).returns(true)
+
+    ["", nil].each do |value|
+      value ? ENV["SESSION_COOKIE_DOMAIN"] = value : ENV.delete("SESSION_COOKIE_DOMAIN")
+      error = assert_raises(RuntimeError) { load(INITIALIZER) }
+      assert_match(/SESSION_COOKIE_DOMAIN must be set in production/, error.message)
+    end
+
+    ENV["SESSION_COOKIE_DOMAIN"] = ".camp.aeskar.com"
+    load(INITIALIZER)
+    assert_equal(".camp.aeskar.com", Rails.application.config.session_options[:domain])
+  ensure
+    Rails.env.unstub(:production?)
+    original ? ENV["SESSION_COOKIE_DOMAIN"] = original : ENV.delete("SESSION_COOKIE_DOMAIN")
+    load(INITIALIZER)
+  end
+
   test "ADMIN_SUBDOMAIN overrides the admin subdomain" do
     assert_equal("admin", Campsite.admin_subdomain)
 
