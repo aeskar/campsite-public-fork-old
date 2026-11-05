@@ -1,0 +1,49 @@
+# Throwaway stack for test.sh: an S3 server, imgproxy and the gateway only.
+# The full stack lives in selfhost/compose.yaml (Task 6).
+name: campsite-test-img
+
+services:
+  # Local S3. RustFS from its own publisher, pinned: the official MinIO
+  # images (Docker Hub, quay.io) do not pull from this environment.
+  s3:
+    image: rustfs/rustfs:1.0.3
+    environment:
+      RUSTFS_ACCESS_KEY: campsite-test
+      RUSTFS_SECRET_KEY: campsite-test-only
+    ports:
+      - "127.0.0.1:${IMG_TEST_S3_PORT:-19000}:9000"
+
+  imgproxy:
+    image: darthsim/imgproxy:v3.28
+    environment:
+      IMGPROXY_USE_S3: "true"
+      IMGPROXY_S3_ENDPOINT: http://s3:9000
+      IMGPROXY_S3_ENDPOINT_USES_PATH_STYLE: "true"
+      IMGPROXY_S3_REGION: us-east-1
+      # Local S3 only. In AWS, imgproxy uses the instance role instead.
+      AWS_ACCESS_KEY_ID: campsite-test
+      AWS_SECRET_ACCESS_KEY: campsite-test-only
+      IMGPROXY_BASE_URL: s3://campsite-test-media/
+      IMGPROXY_ALLOWED_SOURCES: s3://campsite-test-media/
+      IMGPROXY_AUTO_WEBP: "true"
+      # Originals (downloads, full video fetches) stream through imgproxy.
+      # The defaults (10 s write, 5 s download) cut slow clients off
+      # mid-file; test.sh checks a slow 30 MB download. Both are needed.
+      IMGPROXY_WRITE_TIMEOUT: "600"
+      IMGPROXY_DOWNLOAD_TIMEOUT: "600"
+      # Test only: exposes X-Result-Width/Height for the size checks.
+      IMGPROXY_ENABLE_DEBUG_HEADERS: "true"
+    depends_on:
+      - s3
+
+  gateway:
+    image: caddy:2.11-alpine
+    environment:
+      IMGPROXY_UPSTREAM: imgproxy:8080
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./gateway.caddy:/etc/caddy/gateway.caddy:ro
+    ports:
+      - "127.0.0.1:${IMG_TEST_GATEWAY_PORT:-18080}:8080"
+    depends_on:
+      - imgproxy

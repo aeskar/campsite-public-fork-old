@@ -18,7 +18,7 @@ class WebPushSubscription < ApplicationRecord
   def deliver(message)
     vapid_keys = Rails.application.credentials.dig(:webpush_vapid)
 
-    uri = Addressable::URI.parse(Rails.application.credentials.imgix.url)
+    uri = Addressable::URI.parse(ImgixUrlBuilder.base_url)
     uri.path = "static/apple-touch-icon-512.png"
 
     message = message.merge(

@@ -20,7 +20,7 @@ Some hosted services that upstream depends on are replaced with self-hostable or
 | Upstream dependency | Replacement in this fork |
 | --- | --- |
 | Pusher (realtime) | Soketi, a Pusher-compatible server |
-| Imgix (image CDN fed from S3) | self-hosted imgproxy |
+| Imgix (image CDN fed from S3) | self-hosted imgproxy behind a Caddy parameter translator (`selfhost/img/README.md`) |
 | OpenAI (AI summaries, `api/lib/llm.rb`) | Anthropic API (key from `ANTHROPIC_API_KEY`, model from `LLM_MODEL`) |
 | Postmark (mail) | Amazon SES |
 

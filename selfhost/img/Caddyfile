@@ -1,0 +1,10 @@
+# Standalone gateway: img.camp.<domain> is proxied here by the edge Caddy
+# (or this file's import line is copied into the edge site block).
+{
+	admin off
+	auto_https off
+}
+
+:8080 {
+	import gateway.caddy
+}

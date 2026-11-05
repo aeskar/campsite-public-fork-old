@@ -1,0 +1,118 @@
+# Imgix-compatible image gateway in front of imgproxy.
+#
+# Import this file inside a Caddy site block. It translates the Imgix query
+# parameters Campsite builds (see README.md) into imgproxy processing options
+# and proxies to imgproxy, which reads the object from the media bucket.
+#
+# Required environment (read by Caddy when the config is loaded):
+#   IMGPROXY_UPSTREAM  imgproxy address, for example imgproxy:8080
+#
+# imgproxy itself is configured with IMGPROXY_BASE_URL=s3://<bucket>/, so the
+# request path (the S3 key) is appended to that base and cannot name any other
+# source.
+
+# Reject dot segments (.., %2e%2e in any case) before anything else, so a key
+# can never climb out of the bucket prefix (path-style S3, MinIO).
+@img_dotdot {
+	path_regexp (?i)(\.|%2e)(\.|%2e)
+}
+respond @img_dotdot 400
+
+# Uploads are user content on a host inside the session cookie domain. Never
+# let a response run as a page: sandboxed, no scripts, no type sniffing.
+header {
+	Content-Security-Policy "default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'; sandbox"
+	X-Content-Type-Options nosniff
+}
+
+# Resize: w, h, fit=crop.
+map {query.w} {img_w} {
+	~^([0-9]+)$ "w:${1}/"
+	default ""
+}
+map {query.h} {img_h} {
+	~^([0-9]+)$ "h:${1}/"
+	default ""
+}
+map {query.fit} {img_fit} {
+	crop "rt:fill/"
+	default ""
+}
+
+# Device pixel ratio and quality.
+map {query.dpr} {img_dpr} {
+	~^([0-9]+(\.[0-9]+)?)$ "dpr:${1}/"
+	default ""
+}
+map {query.q} {img_q} {
+	~^([0-9]{1,3})$ "q:${1}/"
+	default ""
+}
+
+# Source rectangle crop: rect=x,y,w,h becomes crop:w:h:nowe:x:y.
+map {query.rect} {img_rect} {
+	~^([0-9]+),([0-9]+),([0-9]+),([0-9]+)$ "c:${3}:${4}:nowe:${1}:${2}/"
+	default ""
+}
+
+vars img_opts "{img_w}{img_h}{img_fit}{img_dpr}{img_q}{img_rect}"
+
+# dl (with or without a value) downloads the original bytes as an attachment.
+# Its value is usually empty, so test for presence in the raw query string.
+@img_download expression `{http.request.uri.query}.matches("(^|&)dl(=|&|$)")`
+# No supported transform: serve the original bytes, with Range support
+# (videos, documents, GIFs, fm=mp4 and every unsupported parameter).
+@img_original {
+	not expression `{http.request.uri.query}.matches("(^|&)dl(=|&|$)")`
+	vars {vars.img_opts} ""
+}
+@img_transform {
+	not expression `{http.request.uri.query}.matches("(^|&)dl(=|&|$)")`
+	not vars {vars.img_opts} ""
+}
+
+rewrite @img_download /insecure/raw:1/att:1/plain{http.request.uri.path}?
+rewrite @img_original /insecure/raw:1/plain{http.request.uri.path}?
+rewrite @img_transform /insecure/{vars.img_opts}plain{http.request.uri.path}?
+
+# Only raster images, video and audio may render inline. Everything else
+# (HTML, SVG, PDF, text, octet-stream, missing type) is forced to download.
+reverse_proxy {$IMGPROXY_UPSTREAM} {
+	@img_svg header Content-Type image/svg*
+	@img_inline_image header Content-Type image/*
+	@img_inline_video header Content-Type video/*
+	@img_inline_audio header Content-Type audio/*
+
+	handle_response @img_svg {
+		copy_response_headers {
+			exclude Content-Security-Policy
+		}
+		header >Content-Disposition inline attachment
+		copy_response
+	}
+	handle_response @img_inline_image {
+		copy_response_headers {
+			exclude Content-Security-Policy
+		}
+		copy_response
+	}
+	handle_response @img_inline_video {
+		copy_response_headers {
+			exclude Content-Security-Policy
+		}
+		copy_response
+	}
+	handle_response @img_inline_audio {
+		copy_response_headers {
+			exclude Content-Security-Policy
+		}
+		copy_response
+	}
+	handle_response {
+		copy_response_headers {
+			exclude Content-Security-Policy
+		}
+		header >Content-Disposition inline attachment
+		copy_response
+	}
+}
