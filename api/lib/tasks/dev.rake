@@ -71,9 +71,8 @@ namespace :dev do
         client_id: "TODO",
         client_secret: "TODO",
       },
-      openai: {
-        access_token: "TODO",
-        organization_id: "TODO",
+      anthropic: {
+        api_key: "TODO",
       },
       plain: {
         api_key: "TODO",
