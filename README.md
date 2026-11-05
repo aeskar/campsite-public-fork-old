@@ -1,3 +1,5 @@
+> AESKAR fork: see [AESKAR.md](AESKAR.md) for what differs from upstream.
+
 # Campsite
 
 This is an open source version of the [Campsite](https://www.campsite.com/) app. This codebase is available **as-is** and is not actively maintained by the Campsite team. We will only consider pull requests and issues regarding self-hosting or critical fixes. The codebase is provided as a reference for those interested in learning how Campsite works. We welcome forks of this repository for use in non-commercial projects.
