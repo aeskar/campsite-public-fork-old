@@ -20,9 +20,9 @@ Some hosted services that upstream depends on are replaced with self-hostable or
 | Upstream dependency | Replacement in this fork |
 | --- | --- |
 | Pusher (realtime) | Soketi, a Pusher-compatible server |
-| imgproxy cloud setup | self-hosted imgproxy |
-| Hosted LLM provider | Anthropic API (key from `ANTHROPIC_API_KEY`, model from `LLM_MODEL`) |
-| Transactional email | Amazon SES |
+| Imgix (image CDN fed from S3) | self-hosted imgproxy |
+| OpenAI (AI summaries, `api/lib/llm.rb`) | Anthropic API (key from `ANTHROPIC_API_KEY`, model from `LLM_MODEL`) |
+| Postmark (mail) | Amazon SES |
 
 Calls (100ms), Slack, Linear, Figma, Zapier, Cal.com, Plain, Vercel revalidate and the data exporter stay unconfigured. Boot must not fail when their credentials are missing.
 
