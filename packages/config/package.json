@@ -6,6 +6,7 @@
   "module": "./dist/index.js",
   "scripts": {
     "build": "tsc",
+    "test": "node --test \"src/**/*.test.ts\"",
     "clean": "rm -rf .turbo dist node_modules"
   },
   "devDependencies": {
