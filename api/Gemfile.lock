@@ -165,7 +165,6 @@ GEM
     erubi (1.13.0)
     et-orbi (1.2.11)
       tzinfo
-    event_stream_parser (1.0.0)
     factory_bot (6.2.1)
       activesupport (>= 5.0.0)
     factory_bot_rails (6.2.0)
@@ -424,10 +423,6 @@ GEM
       rubocop-ast (>= 1.31.1, < 2.0)
     rubocop-shopify (2.15.1)
       rubocop (~> 1.51)
-    ruby-openai (7.0.1)
-      event_stream_parser (>= 0.3.0, < 2.0.0)
-      faraday (>= 1)
-      faraday-multipart (>= 1)
     ruby-progressbar (1.13.0)
     ruby2_keywords (0.0.5)
     rufus-scheduler (3.9.1)
@@ -588,7 +583,6 @@ DEPENDENCIES
   redis (= 4.8.1)
   rubocop-rails
   rubocop-shopify
-  ruby-openai
   searchkick
   sentry-rails (~> 5.18)
   sentry-ruby (~> 5.18)

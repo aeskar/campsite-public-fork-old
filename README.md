@@ -60,9 +60,9 @@ Fill in all of these values in the credentials files:
 > [!NOTE]
 > Video calls with webhooks will only work when using a secure tunnel such as ngrok.
 
-### OpenAI
+### Anthropic
 
-We use the OpenAI API to generate summaries for calls and posts. You need both an API key and your organization ID (not the name, found in OpenAI platform settings). Add these under the `openai` credentials key.
+We use the Anthropic API to generate summaries for calls and posts. Set `ANTHROPIC_API_KEY` in the environment (or `anthropic.api_key` in the credentials). The model comes from `LLM_MODEL` (default `claude-sonnet-5-5`).
 
 ### Others
 

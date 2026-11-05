@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 ENV["RAILS_ENV"] ||= "test"
+ENV["ANTHROPIC_API_KEY"] ||= "test-dummy-key"
 require_relative "../config/environment"
 require_relative "support/assertions"
 require_relative "support/action_mailer_test_helper"
@@ -22,8 +23,7 @@ VCR.configure do |config|
   config.filter_sensitive_data("<PLAIN_API_KEY>") { Rails.application.credentials&.dig(:plain, :api_key) }
   config.filter_sensitive_data("<IMGIX_API_KEY>") { Rails.application.credentials&.dig(:imgix, :api_key) }
   config.filter_sensitive_data("<IMGIX_SOURCE_ID>") { Rails.application.credentials&.dig(:imgix, :source_id) }
-  config.filter_sensitive_data("<OPENAI_API_KEY>") { Rails.application.credentials&.dig(:openai, :access_token) }
-  config.filter_sensitive_data("<OPENAI_ORGANIZATION>") { Rails.application.credentials&.dig(:openai, :organization_id) }
+  config.filter_sensitive_data("<ANTHROPIC_API_KEY>") { ENV["ANTHROPIC_API_KEY"].presence }
   config.filter_sensitive_data("<TENOR_API_KEY>") { Rails.application.credentials&.dig(:tenor, :api_key) }
   config.ignore_request do |request|
     uri = URI(request.uri)
