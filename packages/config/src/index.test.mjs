@@ -2,19 +2,23 @@ import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { after, describe, it } from 'node:test'
 
-// Node cannot resolve the extensionless `./slack` import, so run a copy with explicit extensions.
+// Plain .mjs so it runs on Node 20 without type stripping. The sources hold no TypeScript-only
+// syntax, so a copy with explicit extensions (Node cannot resolve `./slack`) can be imported as is.
+// If type annotations are ever added to them, switch this test to a TS runner.
 const dir = mkdtempSync(join(tmpdir(), 'campsite-config-'))
-const src = join(import.meta.dirname, 'index.ts')
+const here = dirname(fileURLToPath(import.meta.url))
+const src = join(here, 'index.ts')
 
 writeFileSync(join(dir, 'index.mjs'), readFileSync(src, 'utf8').replace("from './slack'", "from './slack.mjs'"))
-cpSync(join(import.meta.dirname, 'slack.ts'), join(dir, 'slack.mjs'))
+cpSync(join(here, 'slack.ts'), join(dir, 'slack.mjs'))
 
 after(() => rmSync(dir, { recursive: true, force: true }))
 
-function loadConfig(env: Record<string, string>): Record<string, unknown> {
+function loadConfig(env) {
   const baseEnv = { ...process.env }
 
   for (const key of Object.keys(baseEnv)) {
@@ -24,7 +28,6 @@ function loadConfig(env: Record<string, string>): Record<string, unknown> {
   const result = spawnSync(
     process.execPath,
     [
-      '--experimental-strip-types',
       '--input-type=module',
       '-e',
       `import * as c from ${JSON.stringify(join(dir, 'index.mjs'))}; console.log(JSON.stringify(c))`
