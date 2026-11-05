@@ -11,6 +11,20 @@
 # request path (the S3 key) is appended to that base and cannot name any other
 # source.
 
+# Reject dot segments (.., %2e%2e in any case) before anything else, so a key
+# can never climb out of the bucket prefix (path-style S3, MinIO).
+@img_dotdot {
+	path_regexp (?i)(\.|%2e)(\.|%2e)
+}
+respond @img_dotdot 400
+
+# Uploads are user content on a host inside the session cookie domain. Never
+# let a response run as a page: sandboxed, no scripts, no type sniffing.
+header {
+	Content-Security-Policy "default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'; sandbox"
+	X-Content-Type-Options nosniff
+}
+
 # Resize: w, h, fit=crop.
 map {query.w} {img_w} {
 	~^([0-9]+)$ "w:${1}/"
@@ -61,4 +75,44 @@ rewrite @img_download /insecure/raw:1/att:1/plain{http.request.uri.path}?
 rewrite @img_original /insecure/raw:1/plain{http.request.uri.path}?
 rewrite @img_transform /insecure/{vars.img_opts}plain{http.request.uri.path}?
 
-reverse_proxy {$IMGPROXY_UPSTREAM}
+# Only raster images, video and audio may render inline. Everything else
+# (HTML, SVG, PDF, text, octet-stream, missing type) is forced to download.
+reverse_proxy {$IMGPROXY_UPSTREAM} {
+	@img_svg header Content-Type image/svg*
+	@img_inline_image header Content-Type image/*
+	@img_inline_video header Content-Type video/*
+	@img_inline_audio header Content-Type audio/*
+
+	handle_response @img_svg {
+		copy_response_headers {
+			exclude Content-Security-Policy
+		}
+		header >Content-Disposition inline attachment
+		copy_response
+	}
+	handle_response @img_inline_image {
+		copy_response_headers {
+			exclude Content-Security-Policy
+		}
+		copy_response
+	}
+	handle_response @img_inline_video {
+		copy_response_headers {
+			exclude Content-Security-Policy
+		}
+		copy_response
+	}
+	handle_response @img_inline_audio {
+		copy_response_headers {
+			exclude Content-Security-Policy
+		}
+		copy_response
+	}
+	handle_response {
+		copy_response_headers {
+			exclude Content-Security-Policy
+		}
+		header >Content-Disposition inline attachment
+		copy_response
+	}
+}

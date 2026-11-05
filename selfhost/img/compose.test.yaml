@@ -1,25 +1,26 @@
-# Throwaway stack for test.sh: MinIO, imgproxy and the gateway only.
+# Throwaway stack for test.sh: an S3 server, imgproxy and the gateway only.
 # The full stack lives in selfhost/compose.yaml (Task 6).
 name: campsite-test-img
 
 services:
-  minio:
-    image: ${MINIO_IMAGE:-pgsty/minio:latest}
-    command: server /data
+  # Local S3. RustFS from its own publisher, pinned: the official MinIO
+  # images (Docker Hub, quay.io) do not pull from this environment.
+  s3:
+    image: rustfs/rustfs:1.0.3
     environment:
-      MINIO_ROOT_USER: campsite-test
-      MINIO_ROOT_PASSWORD: campsite-test-only
+      RUSTFS_ACCESS_KEY: campsite-test
+      RUSTFS_SECRET_KEY: campsite-test-only
     ports:
-      - "127.0.0.1:${IMG_TEST_MINIO_PORT:-19000}:9000"
+      - "127.0.0.1:${IMG_TEST_S3_PORT:-19000}:9000"
 
   imgproxy:
     image: darthsim/imgproxy:v3.28
     environment:
       IMGPROXY_USE_S3: "true"
-      IMGPROXY_S3_ENDPOINT: http://minio:9000
+      IMGPROXY_S3_ENDPOINT: http://s3:9000
       IMGPROXY_S3_ENDPOINT_USES_PATH_STYLE: "true"
       IMGPROXY_S3_REGION: us-east-1
-      # Local MinIO only. In AWS, imgproxy uses the instance role instead.
+      # Local S3 only. In AWS, imgproxy uses the instance role instead.
       AWS_ACCESS_KEY_ID: campsite-test
       AWS_SECRET_ACCESS_KEY: campsite-test-only
       IMGPROXY_BASE_URL: s3://campsite-test-media/
@@ -33,7 +34,7 @@ services:
       # Test only: exposes X-Result-Width/Height for the size checks.
       IMGPROXY_ENABLE_DEBUG_HEADERS: "true"
     depends_on:
-      - minio
+      - s3
 
   gateway:
     image: caddy:2.11-alpine
