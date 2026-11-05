@@ -56,6 +56,10 @@ curl -fsS -o /dev/null "${S3_AUTH[@]}" -X PUT "$S3/$BUCKET"
 curl -fsS -o /dev/null "${S3_AUTH[@]}" -H "Content-Type: image/png" -T fixtures/sample.png "$S3/$BUCKET/o/test/p/sample.png"
 curl -fsS -o /dev/null "${S3_AUTH[@]}" -H "Content-Type: video/mp4" -T fixtures/sample.mp4 "$S3/$BUCKET/o/test/p/sample.mp4"
 
+# A 30 MB object, fetched slowly below, checks imgproxy's server timeouts.
+dd if=/dev/urandom of="$TMP/big.bin" bs=1048576 count=30 2>/dev/null
+curl -fsS -o /dev/null "${S3_AUTH[@]}" -H "Content-Type: application/octet-stream" -T "$TMP/big.bin" "$S3/$BUCKET/o/test/p/big.bin"
+
 PNG_SHA="$(sha fixtures/sample.png)"
 MP4_SHA="$(sha fixtures/sample.mp4)"
 
@@ -106,6 +110,11 @@ check "unsupported fm=mp4 falls back to the original" $?
 curl -s -D "$TMP/h9" -o "$TMP/b9" "$GW/o/test/p/sample.png?blend-color=3b82f6&w=40&h=40&fit=crop"
 [ "$(status "$TMP/h9")" = "200" ] && [ "$(header "$TMP/h9" X-Result-Width)" = "40" ]
 check "unsupported blend-color is ignored, resize still applied" $?
+
+# About 15 s at 2 MB/s: longer than imgproxy's default 10 s write timeout.
+curl -s -D "$TMP/h11" -o "$TMP/b11" --limit-rate 2M "$GW/o/test/p/big.bin?dl="
+[ "$(status "$TMP/h11")" = "200" ] && [ "$(sha "$TMP/b11")" = "$(sha "$TMP/big.bin")" ]
+check "slow 30 MB download is complete (same SHA-256)" $?
 
 curl -s -D "$TMP/h10" -o "$TMP/b10" "$GW/o/test/p/missing.png?w=10"
 [ "$(status "$TMP/h10")" = "404" ]

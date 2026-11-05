@@ -25,6 +25,11 @@ services:
       IMGPROXY_BASE_URL: s3://campsite-test-media/
       IMGPROXY_ALLOWED_SOURCES: s3://campsite-test-media/
       IMGPROXY_AUTO_WEBP: "true"
+      # Originals (downloads, full video fetches) stream through imgproxy.
+      # The defaults (10 s write, 5 s download) cut slow clients off
+      # mid-file; test.sh checks a slow 30 MB download. Both are needed.
+      IMGPROXY_WRITE_TIMEOUT: "600"
+      IMGPROXY_DOWNLOAD_TIMEOUT: "600"
       # Test only: exposes X-Result-Width/Height for the size checks.
       IMGPROXY_ENABLE_DEBUG_HEADERS: "true"
     depends_on:

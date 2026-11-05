@@ -70,6 +70,10 @@ imgproxy:
 | `IMGPROXY_BASE_URL` | `s3://<bucket>/` | `s3://<bucket>/` |
 | `IMGPROXY_ALLOWED_SOURCES` | `s3://<bucket>/` | `s3://<bucket>/` |
 | `IMGPROXY_AUTO_WEBP` | `true` | `true` |
+| `IMGPROXY_WRITE_TIMEOUT` | `600` | `600` |
+| `IMGPROXY_DOWNLOAD_TIMEOUT` | `600` | `600` |
+
+Originals stream through imgproxy, so the two timeouts bound the longest download or un-ranged video fetch. With the defaults (10 s and 5 s) a 30 MB download at 2 MB/s is cut off; `test.sh` checks it. Transforms on sources above `IMGPROXY_MAX_SRC_RESOLUTION` (default 50 megapixels) return an error; originals are not affected.
 
 `IMGPROXY_ENABLE_DEBUG_HEADERS` is set only in `compose.test.yaml`.
 
