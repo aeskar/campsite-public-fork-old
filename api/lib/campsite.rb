@@ -43,7 +43,7 @@ module Campsite
   end
 
   def self.admin_subdomain
-    "admin"
+    ENV.fetch("ADMIN_SUBDOMAIN", "admin")
   end
 
   def self.desktop_app_protocol
